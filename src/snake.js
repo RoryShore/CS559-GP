@@ -1,0 +1,1 @@
+console.log("Snake script placeholder.");
