@@ -1,38 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no" />
+  <title>CS559 Group Project — ID: 9218</title>
+  <style>
+    :root { --bg:#0f1115; --panel:#141824; --text:#e8eefc; --muted:#aab4d6; --accent:#7aa2ff; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      display: flex; flex-direction: column; min-height: 100vh;
+    }
+    header {
+      position: sticky; top: 0; z-index: 10;
+      background: linear-gradient(180deg, #151a2a, #0f1115);
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      padding: 10px 14px;
+      display: flex; gap: 12px; align-items: center; justify-content: space-between;
+    }
+    #title {
+      font-weight: 800; letter-spacing: .3px;
+      display: flex; flex-direction: column;
+      line-height: 1.1;
+    }
+    #title small { color: var(--muted); font-weight: 600; }
+    #hud {
+      display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end;
+      font-variant-numeric: tabular-nums;
+    }
+    .pill {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.08);
+      padding: 6px 10px; border-radius: 999px;
+      color: var(--text);
+    }
+
+    main { width: 100%; max-width: 1100px; margin: 0 auto; padding: 12px; display: grid; gap: 12px; }
+    #canvasWrap {
+      background: radial-gradient(1200px 600px at 50% 0%, rgba(122,162,255,.18), transparent 55%);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      overflow: hidden;
+    }
+    canvas { width: 100%; height: 70vh; min-height: 520px; display: block; background: #090b10; }
+
+    #panel {
+      background: var(--panel);
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: 16px;
+      padding: 12px;
+      display: grid; gap: 12px;
+    }
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+    .left, .right { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    label {
+      display: inline-flex; gap: 8px; align-items: center;
+      background: rgba(255,255,255,.05);
+      border: 1px solid rgba(255,255,255,.08);
+      padding: 8px 10px; border-radius: 12px;
+      user-select: none;
+    }
+    input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--accent); }
+
+    button {
+      background: rgba(122,162,255,.16);
+      border: 1px solid rgba(122,162,255,.35);
+      color: var(--text);
+      padding: 10px 12px; border-radius: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    button:active { transform: translateY(1px); }
+
+    #mobileControls {
+      display: grid;
+      grid-template-columns: 64px 64px 64px;
+      grid-template-rows: 64px 64px 64px;
+      gap: 8px;
+      justify-content: center;
+      margin-top: 6px;
+    }
+    .mc { width: 64px; height: 64px; border-radius: 16px; font-size: 18px; }
+    .span3 { grid-column: 1 / span 3; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+
+    #help { color: var(--muted); font-size: 0.95rem; line-height: 1.35; }
+    code { background: rgba(255,255,255,.06); padding: 2px 6px; border-radius: 8px; }
+  </style>
+</head>
 <body>
   <header>
-    <h1>CS559 Group Project</h1>
-    <div id="header-hud"><b>CS559 Group Project — ID: 9218</b></div>
-
+    <div id="title">
+      <div>CS559 Group Project — <span style="color:var(--accent)">ID: 9218</span></div>
+      <small>Clear Mode (match-3) ↔ Snake Mode (empty cells only)</small>
+    </div>
+    <div id="hud">
+      <div class="pill">Score: <span id="score">0</span></div>
+      <div class="pill">Grid: <span id="gridSize">9×9</span></div>
+      <div class="pill">Play: <span id="playText">Clear</span></div>
+      <div class="pill">Look: <span id="modeText">Prototype</span></div>
+    </div>
   </header>
 
-  <div id="canvas-container">
-    <canvas id="c"></canvas>
-  </div>
-
-  <div id="control-box">
-    <h3>Controls</h3>
-
-    <label><input type="checkbox" id="fullMode"> Full Mode (textures/models)</label>
-    <br />
-    <label><input type="checkbox" id="growMode" checked> Grow Grid Mode</label>
-
-    <div class="description">
-      Run using Live Server or <code>python -m http.server 8000</code>.
-      Don’t open with <code>file://</code>.
+  <main>
+    <div id="canvasWrap">
+      <canvas id="c"></canvas>
     </div>
-  </div>
+
+    <section id="panel">
+      <div class="row">
+        <div class="left">
+          <label><input type="checkbox" id="playModeSnake" /> Snake Mode (start = Clear Mode)</label>
+          <label><input type="checkbox" id="fullMode" /> Full Look (textures/models)</label>
+          <label><input type="checkbox" id="growMode" checked /> Toggle: Grow mode (off = Shrink mode)</label>
+        </div>
+        <div class="right">
+          <button id="btnGrowShrink">Grow</button>
+          <button id="btnReset">Reset</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div id="help">
+          <b>Clear Mode:</b> move cursor with <code>WASD</code>/<code>Arrows</code>. Press <code>Space</code> to select a tile,
+          move to an adjacent tile, press <code>Space</code> again to swap. Only <b>3+</b> in a row/col clears. <code>X</code> Is GOD mode and <code>Z</code> adds a new tile.<br/>
+          <b>Snake Mode:</b> move snake with <code>WASD</code>/<code>Arrows</code>. Uncleared tiles are walls. Eat fruit to grow.<br/>
+          Run locally with Live Server or <code>python -m http.server 8000</code> (ES Modules won’t work via <code>file://</code>).
+        </div>
+      </div>
+
+      <div id="mobileControls" aria-label="Mobile controls">
+        <div></div>
+        <button class="mc" id="mcUp">▲</button>
+        <div></div>
+
+        <button class="mc" id="mcLeft">◀</button>
+        <button class="mc" id="mcDown">▼</button>
+        <button class="mc" id="mcRight">▶</button>
+
+        <div class="span3">
+          <button id="mcAction">Select/Swap</button>
+          <button id="mcGrow">Grow</button>
+          <button id="mcShrink">Shrink</button>
+        </div>
+      </div>
+    </section>
+  </main>
 
   <script type="module" src="./src/main.js"></script>
 </body>
-
-<style>
-  #canvas-container { width: 100%; max-width: 900px; }
-  canvas { width: 100%; height: 600px; display: block; background: #111; }
-
-#header-hud {
-  font-size: 1.1rem;
-  font-weight: bold;
-}
-
-  
-</style>
+</html>
