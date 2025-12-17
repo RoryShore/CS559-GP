@@ -1,44 +1,48 @@
-import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
-import { GLTFLoader } from "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
+import { Game } from "./game.js";
+import { UI } from "./ui.js";
 
 const canvas = document.querySelector("#c");
-const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+const ui = new UI();
+const game = new Game({ canvas, ui });
 
-const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x111111);
+game.start();
 
-const camera = new THREE.PerspectiveCamera(60, 2, 0.1, 200);
-camera.position.set(6, 6, 10);
-camera.lookAt(0, 0, 0);
+// UI -> game
+ui.onToggleFullMode((v) => game.setFullMode(v));
+ui.onToggleGrowMode((v) => game.setGrowMode(v));
+ui.onGrowShrink(() => game.growOrShrink());
+ui.onReset(() => game.reset());
 
-const light = new THREE.DirectionalLight(0xffffff, 1);
-light.position.set(5, 10, 5);
-scene.add(light);
-scene.add(new THREE.AmbientLight(0xffffff, 0.3));
+// Play mode switch (start on Clear mode)
+ui.onTogglePlayModeSnake((isSnake) => game.setPlayMode(isSnake ? "snake" : "clear"));
 
-// test cube
-const cube = new THREE.Mesh(
-  new THREE.BoxGeometry(2, 2, 2),
-  new THREE.MeshStandardMaterial()
-);
-scene.add(cube);
+// Mobile: directions + action
+ui.onMoveDir((dir) => game.handleDirInput(dir));
+ui.onAction(() => game.handleAction());
 
-function resizeRendererToDisplaySize() {
-  const width = canvas.clientWidth;
-  const height = canvas.clientHeight;
-  const needResize = canvas.width !== Math.floor(width) || canvas.height !== Math.floor(height);
-  if (needResize) renderer.setSize(width, height, false);
-  camera.aspect = width / height;
-  camera.updateProjectionMatrix();
-}
+// Explicit grow/shrink
+ui.onGrowShrinkExplicit({
+  onGrow: () => game.growGrid(),
+  onShrink: () => game.shrinkGrid(),
+});
 
-function animate(t) {
-  t *= 0.001;
-  resizeRendererToDisplaySize();
-  cube.rotation.y = t;
-  cube.rotation.x = t * 0.7;
-  renderer.render(scene, camera);
-  requestAnimationFrame(animate);
-}
-requestAnimationFrame(animate);
+// Keyboard
+window.addEventListener("keydown", (e) => {
+  const k = e.key.toLowerCase();
+
+  if (k === "arrowup" || k === "w") game.handleDirInput("up");
+  else if (k === "arrowdown" || k === "s") game.handleDirInput("down");
+  else if (k === "arrowleft" || k === "a") game.handleDirInput("left");
+  else if (k === "arrowright" || k === "d") game.handleDirInput("right");
+  else if (k === " ") game.handleAction();
+  else if (k === "g") game.growGrid();
+  else if (k === "h") game.shrinkGrid();
+  else if (k === "r") game.reset();
+  else if (k === "z") game.placeTileAtCursor();
+  else if (k === "x") game.godClearAll(); // GOD MODE
+
+});
+
+window.addEventListener("keydown", (e) => {
+  if (["ArrowUp","ArrowDown","ArrowLeft","ArrowRight"," "].includes(e.key)) e.preventDefault();
+}, { passive: false });
